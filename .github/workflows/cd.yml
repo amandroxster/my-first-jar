@@ -2,19 +2,35 @@ name: CD - Deploy to Podman
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version to deploy (e.g. v1.0.5)'
-        required: true
 
 jobs:
   deploy:
     runs-on: self-hosted
 
     steps:
-      - name: Download JAR from GitHub Releases
+      - name: Get latest release version
+        id: get_version
         run: |
-          wget https://github.com/amandroxster/my-first-jar/releases/download/${{ github.event.inputs.version }}/my-app-1.0.jar
+          LATEST=$(gh release list \
+            --repo amandroxster/my-first-jar \
+            --limit 1 \
+            --json tagName \
+            --jq '.[0].tagName')
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+          echo "=== Latest Release: $LATEST ==="
+
+      - name: Download JAR from latest release
+        run: |
+          echo "=== Downloading ${{ steps.get_version.outputs.version }} ==="
+          gh release download ${{ steps.get_version.outputs.version }} \
+            --repo amandroxster/my-first-jar \
+            --pattern "*.jar" \
+            --clobber
+
+      - name: Show downloaded JAR
+        run: |
+          echo "=== Downloaded JAR ==="
+          ls -lh *.jar
 
       - name: Stop old container
         run: podman stop app-server || true
@@ -30,4 +46,14 @@ jobs:
             localhost/app-server
 
       - name: Verify deployment
-        run: podman ps | grep app-server
+        run: |
+          echo "=== Running Containers ==="
+          podman ps | grep app-server
+
+      - name: Show app logs
+        run: |
+          sleep 2
+          echo "=== App Server Logs ==="
+          podman logs app-server
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -42,6 +42,7 @@ jobs:
         run: |
           podman run -d \
             --name app-server \
+            -p 8080:8080 \
             -v $(pwd)/my-app-1.0.jar:/app/app.jar \
             localhost/app-server
 

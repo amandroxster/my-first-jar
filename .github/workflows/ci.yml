@@ -13,19 +13,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Show which container will be used
+        run: |
+          echo "=== Build Container Info ==="
+          podman inspect localhost/build-server | grep -E '"Id"|"Created"|"Os"|"Architecture"'
+
       - name: Build JAR inside Build Container
         run: |
-          podman run --rm \
+          podman run \
+            --name build-container \
             -v $(pwd):/app \
             -w /app \
             localhost/build-server \
             mvn clean package
+
+      - name: Show Build Container logs
+        run: |
+          echo "=== Build Container Logs ==="
+          podman logs build-container
+
+      - name: Show JAR was created
+        run: |
+          echo "=== JAR Output ==="
+          ls -lh target/*.jar
+
+      - name: Cleanup build container
+        run: podman rm build-container || true
 
       - name: Run Tests inside Build Container
         run: |
           podman run --rm \
             -v $(pwd):/app \
             -w /app \
+            --name test-container \
             localhost/build-server \
             mvn test -DskipTests=false
 

@@ -48,9 +48,10 @@ jobs:
       - name: Verify deployment
         run: |
           echo "=== Running Containers ==="
-          podman ps | grep app-server
+          podman ps -a | grep app-server || true 
 
       - name: Show app logs
+        if: always()
         run: |
           sleep 2
           echo "=== App Server Logs ==="

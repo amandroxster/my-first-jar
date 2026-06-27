@@ -13,11 +13,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build JAR
-        run: mvn clean package
+      - name: Build JAR inside Build Container
+        run: |
+          podman run --rm \
+            -v $(pwd):/app \
+            -w /app \
+            localhost/build-server \
+            mvn clean package
 
-      - name: Run Tests
-        run: mvn test -DskipTests=false
+      - name: Run Tests inside Build Container
+        run: |
+          podman run --rm \
+            -v $(pwd):/app \
+            -w /app \
+            localhost/build-server \
+            mvn test -DskipTests=false
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v1

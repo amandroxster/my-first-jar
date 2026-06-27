@@ -1,0 +1,33 @@
+name: CD - Deploy to Podman
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to deploy (e.g. v1.0.5)'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Download JAR from GitHub Releases
+        run: |
+          wget https://github.com/amandroxster/my-first-jar/releases/download/${{ github.event.inputs.version }}/my-app-1.0.jar
+
+      - name: Stop old container
+        run: podman stop app-server || true
+
+      - name: Remove old container
+        run: podman rm app-server || true
+
+      - name: Run new container with JAR
+        run: |
+          podman run -d \
+            --name app-server \
+            -v $(pwd)/my-app-1.0.jar:/app/app.jar \
+            localhost/app-server
+
+      - name: Verify deployment
+        run: podman ps | grep app-server
